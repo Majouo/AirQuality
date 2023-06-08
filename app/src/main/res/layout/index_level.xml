@@ -10,11 +10,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
+        android:layout_marginTop="20dp"
         android:layout_marginEnd="24dp"
         android:text="IndexName"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.518"
         app:layout_constraintStart_toEndOf="@+id/progressBar"
-        app:layout_constraintTop_toTopOf="@+id/progressBar" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -22,7 +24,9 @@
         android:layout_width="91dp"
         android:layout_height="82dp"
         android:layout_marginStart="24dp"
-        android:max="5"
+        android:indeterminateOnly="false"
+        android:max="6"
+        android:progressDrawable="@drawable/circle"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -31,7 +35,7 @@
         android:id="@+id/indexDesc"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="4dp"
         android:layout_marginBottom="24dp"
         android:text="IndexDesc"
         app:layout_constraintBottom_toBottomOf="parent"

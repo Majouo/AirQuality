@@ -3,6 +3,8 @@ package com.example.airquality;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
 import android.content.Context;
@@ -32,11 +34,16 @@ import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
     private LocationRequest locationRequest;
     private Location userLocation;
     private static final int REQUEST_CHECK_SETTINGS = 10001;
+    RecyclerView recyclerView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,6 +54,30 @@ public class MainActivity extends AppCompatActivity {
         locationRequest.setInterval(5000);
         locationRequest.setFastestInterval(2000);
         fetchUserLocation();
+
+        recyclerView = findViewById(R.id.recyclerView);
+
+        List<AirInfo> list = new ArrayList<>();
+        AirInfo testminus = new AirInfo("CO2","Dwutlenek Węgla",-1);
+        AirInfo test0 = new AirInfo("CO2","Dwutlenek Węgla",0);
+        AirInfo test1 = new AirInfo("CO2","Dwutlenek Węgla",1);
+        AirInfo test2 = new AirInfo("CO2","Dwutlenek Węgla",2);
+        AirInfo test3 = new AirInfo("CO2","Dwutlenek Węgla",3);
+        AirInfo test4 = new AirInfo("CO2","Dwutlenek Węgla",4);
+        AirInfo test5 = new AirInfo("CO2","Dwutlenek Węgla",5);
+        list.add(testminus);
+        list.add(test0);
+        list.add(test1);
+        list.add(test2);
+        list.add(test3);
+        list.add(test4);
+        list.add(test5);
+
+        AirInfoAdapter AirInfoAdapterViewAdapter = new AirInfoAdapter(list,this);
+
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(AirInfoAdapterViewAdapter);
+
 
     }
 
