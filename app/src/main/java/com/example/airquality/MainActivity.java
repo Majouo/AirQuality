@@ -13,14 +13,21 @@ import android.location.LocationManager;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.Switch;
 import android.widget.Toast;
+import com.google.gson.Gson;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.ResolvableApiException;
@@ -33,14 +40,29 @@ import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private LocationRequest locationRequest;
     private Location userLocation;
+
+    List<Station> stations;
     private static final int REQUEST_CHECK_SETTINGS = 10001;
     RecyclerView recyclerView;
 
@@ -48,6 +70,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        stations = new ArrayList<>();
 
         locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
@@ -98,6 +122,11 @@ public class MainActivity extends AppCompatActivity {
                 {
                     System.out.println(userLocation);
                     item.setIcon(getResources().getDrawable(R.drawable.baseline_location_on_24));
+                    fetchStations();
+                    if(stations.size()>0) {
+                        adjustToUserLocation();
+                        System.out.println(stations.get(0).getStationData());
+                    }
                 }
                 else
                 {
@@ -185,6 +214,54 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void fetchStations() {
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                URL endpoint = null;
+                try {
+                    endpoint = new URL("https://api.gios.gov.pl/pjp-api/rest/station/findAll");
+                    HttpURLConnection connection = (HttpURLConnection)endpoint.openConnection();
+                    if(connection.getResponseCode() == 200){
+                        InputStreamReader reader = new InputStreamReader(connection.getInputStream());
+                        JsonParser parser = new JsonParser();
+                        JsonArray jsonArray = (JsonArray)parser.parse(reader);
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                stations.clear();
+                                for(int i=0;i<jsonArray.size();i++)
+                                {
+                                    JsonObject jsonObject = jsonArray.get(i).getAsJsonObject();
+                                    Location location =new Location(jsonObject.get("gegrLon").getAsDouble(),jsonObject.get("gegrLat").getAsDouble());
+                                    Station station= new Station(jsonObject.get("id").getAsInt(),location,jsonObject.get("stationName").getAsString());
+                                    stations.add(station);
+                                }
+
+                            }
+                        });
+                    }else{
+                    }
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
+
+    private void adjustToUserLocation()
+    {
+        for (Station station:stations) {
+            double adjLon=station.getLocation().longitude-userLocation.longitude;
+            double adjLat=station.getLocation().latitude-userLocation.latitude;
+            double length=Math.sqrt((adjLon*adjLon)+(adjLat*adjLat));
+            station.setHowFar(length);
+        }
+        Collections.sort(stations, new HowFarComparator());
+    }
 
     private boolean isGPSEnabled()
     {
