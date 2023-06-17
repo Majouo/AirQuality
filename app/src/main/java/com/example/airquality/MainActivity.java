@@ -25,10 +25,6 @@ import android.widget.Switch;
 import android.widget.Toast;
 import com.google.gson.Gson;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.LocationCallback;
@@ -40,6 +36,7 @@ import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -120,13 +117,16 @@ public class MainActivity extends AppCompatActivity {
             case R.id.location:
                 if(fetchUserLocation()==true)
                 {
+                    try {
+                        System.out.println(stations.get(0).toString());
+                    }
+                    catch (IndexOutOfBoundsException e)
+                    {
+
+                    }
                     System.out.println(userLocation);
                     item.setIcon(getResources().getDrawable(R.drawable.baseline_location_on_24));
                     fetchStations();
-                    if(stations.size()>0) {
-                        adjustToUserLocation();
-                        System.out.println(stations.get(0).getStationData());
-                    }
                 }
                 else
                 {
@@ -238,6 +238,7 @@ public class MainActivity extends AppCompatActivity {
                                     Station station= new Station(jsonObject.get("id").getAsInt(),location,jsonObject.get("stationName").getAsString());
                                     stations.add(station);
                                 }
+                                adjustToUserLocation();
 
                             }
                         });
