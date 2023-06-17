@@ -39,6 +39,7 @@ public class AirInfoAdapter extends RecyclerView.Adapter<AirInfoAdapter.ViewHold
         holder.airInfo = airInfo;
         holder.indexName.setText(airInfo.getName());
         holder.indexDesc.setText(airInfo.getDescription());
+        holder.distance.setText("Odległość od pomiaru: "+(String.format("%.2f",airInfo.getDistance()))+" Km");
         if(holder.airInfo.getLevel()+1>=0) {
             holder.progressBar.setProgress(airInfo.getLevel()+1);
         }
@@ -57,12 +58,15 @@ public class AirInfoAdapter extends RecyclerView.Adapter<AirInfoAdapter.ViewHold
         ProgressBar progressBar;
         TextView indexName;
         TextView indexDesc;
+
+        TextView distance;
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
 
             indexName = itemView.findViewById(R.id.indexName);
             indexDesc = itemView.findViewById(R.id.indexDesc);
             progressBar = itemView.findViewById(R.id.progressBar);
+            distance = itemView.findViewById(R.id.distance);
 
         }
     }

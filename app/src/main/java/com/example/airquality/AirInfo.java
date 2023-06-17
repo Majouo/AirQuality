@@ -7,10 +7,13 @@ public class AirInfo implements Serializable {
     private String description;
     private int level;
 
-    public AirInfo(String name, String description, int level) {
+    private double distance;
+
+    public AirInfo(String name, String description, int level,double distance) {
         this.name = name;
         this.description = description;
         this.level = level;
+        this.distance = distance;
     }
 
     public String getName() {
@@ -37,12 +40,21 @@ public class AirInfo implements Serializable {
         this.level = level;
     }
 
+    public double getDistance() {
+        return distance;
+    }
+
+    public void setDistance(double distance) {
+        this.distance = distance;
+    }
+
     @Override
     public String toString() {
         return "AirInfo{" +
                 "name='" + name + '\'' +
                 ", description='" + description + '\'' +
                 ", level=" + level +
+                ", distance=" +  (String.format("%.2f", distance)) +" Km"+
                 '}';
     }
 }

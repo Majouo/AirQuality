@@ -24,7 +24,7 @@ public class Station implements Serializable {
 
     String stationName;
 
-    double howFar;
+    double howFar;//Km
 
     JsonObject data;
 
@@ -32,7 +32,7 @@ public class Station implements Serializable {
         this.id = id;
         this.location = location;
         this.stationName = stationName;
-        howFar =-1;
+        howFar =Double.MAX_VALUE;
     }
 
     public void setData(JsonObject data) {

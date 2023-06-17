@@ -10,6 +10,8 @@ public class IndexLevelController extends AppCompatActivity {
 
     TextView indexName;
     TextView indexDesc;
+
+    TextView distance;
     ProgressBar progressBar;
 
     @Override
@@ -18,6 +20,7 @@ public class IndexLevelController extends AppCompatActivity {
         setContentView(R.layout.index_level);
         indexName = findViewById(R.id.indexName);
         indexDesc = findViewById(R.id.indexDesc);
+        distance = findViewById(R.id.distance);
         progressBar = findViewById(R.id.progressBar);
 
 

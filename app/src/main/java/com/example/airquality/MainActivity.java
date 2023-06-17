@@ -60,6 +60,8 @@ public class MainActivity extends AppCompatActivity {
     private Location userLocation;
 
     List<Station> stations;
+
+    HashMap<String, AirInfo> airInfos;
     private static final int REQUEST_CHECK_SETTINGS = 10001;
     RecyclerView recyclerView;
 
@@ -69,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         stations = new ArrayList<>();
+        airInfos = new HashMap<>();
 
         locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
@@ -78,26 +81,17 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerView = findViewById(R.id.recyclerView);
 
-        List<AirInfo> list = new ArrayList<>();
-        AirInfo testminus = new AirInfo("CO2","Dwutlenek Węgla",-1);
-        AirInfo test0 = new AirInfo("CO2","Dwutlenek Węgla",0);
-        AirInfo test1 = new AirInfo("CO2","Dwutlenek Węgla",1);
-        AirInfo test2 = new AirInfo("CO2","Dwutlenek Węgla",2);
-        AirInfo test3 = new AirInfo("CO2","Dwutlenek Węgla",3);
-        AirInfo test4 = new AirInfo("CO2","Dwutlenek Węgla",4);
-        AirInfo test5 = new AirInfo("CO2","Dwutlenek Węgla",5);
-        list.add(testminus);
-        list.add(test0);
-        list.add(test1);
-        list.add(test2);
-        list.add(test3);
-        list.add(test4);
-        list.add(test5);
-
-        AirInfoAdapter AirInfoAdapterViewAdapter = new AirInfoAdapter(list,this);
-
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(AirInfoAdapterViewAdapter);
+        if(fetchUserLocation()==true)
+        {
+            try {
+                System.out.println(stations.get(0).toString()+" "+stations.get(0).howFar+" Km");
+            }
+            catch (IndexOutOfBoundsException e)
+            {
+            }
+            System.out.println(userLocation);
+            fetchStations();
+        }
 
 
     }
@@ -118,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
                 if(fetchUserLocation()==true)
                 {
                     try {
-                        System.out.println(stations.get(0).toString());
+                        System.out.println(stations.get(0).toString()+" "+stations.get(0).howFar+" Km");
                     }
                     catch (IndexOutOfBoundsException e)
                     {
@@ -227,21 +221,16 @@ public class MainActivity extends AppCompatActivity {
                         JsonParser parser = new JsonParser();
                         JsonArray jsonArray = (JsonArray)parser.parse(reader);
 
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                stations.clear();
-                                for(int i=0;i<jsonArray.size();i++)
-                                {
-                                    JsonObject jsonObject = jsonArray.get(i).getAsJsonObject();
-                                    Location location =new Location(jsonObject.get("gegrLon").getAsDouble(),jsonObject.get("gegrLat").getAsDouble());
-                                    Station station= new Station(jsonObject.get("id").getAsInt(),location,jsonObject.get("stationName").getAsString());
-                                    stations.add(station);
-                                }
-                                adjustToUserLocation();
-
+                            stations.clear();
+                            for(int i=0;i<jsonArray.size();i++)
+                            {
+                                JsonObject jsonObject = jsonArray.get(i).getAsJsonObject();
+                                Location location =new Location(jsonObject.get("gegrLon").getAsDouble(),jsonObject.get("gegrLat").getAsDouble());
+                                Station station= new Station(jsonObject.get("id").getAsInt(),location,jsonObject.get("stationName").getAsString());
+                                stations.add(station);
                             }
-                        });
+                          adjustToUserLocation();
+                          searchForData();
                     }else{
                     }
                 } catch (MalformedURLException e) {
@@ -255,10 +244,21 @@ public class MainActivity extends AppCompatActivity {
 
     private void adjustToUserLocation()
     {
+        final double radius = 6371;
         for (Station station:stations) {
-            double adjLon=station.getLocation().longitude-userLocation.longitude;
-            double adjLat=station.getLocation().latitude-userLocation.latitude;
-            double length=Math.sqrt((adjLon*adjLon)+(adjLat*adjLat));
+
+            double uLat= Math.toRadians(userLocation.latitude);
+            double uLon= Math.toRadians(userLocation.longitude);
+            double sLat= Math.toRadians(station.getLocation().latitude);
+            double sLon= Math.toRadians(station.getLocation().longitude);
+
+            double adjLat=sLat-uLat;
+            double adjLon=sLon-uLon;
+
+            double a=Math.sin(adjLat / 2) * Math.sin(adjLat / 2)
+                    + Math.cos(uLat) * Math.cos(sLat)
+                    * Math.sin(adjLon / 2) * Math.sin(adjLon / 2);
+            double length=radius*(2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
             station.setHowFar(length);
         }
         Collections.sort(stations, new HowFarComparator());
@@ -273,5 +273,76 @@ public class MainActivity extends AppCompatActivity {
         }
         isEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         return isEnabled;
+    }
+
+    private void searchForData()
+    {
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                int i=0;
+                airInfos.clear();
+                double searchDistance=30.0;
+                while(stations.get(i).getHowFar()<=searchDistance&&i<stations.size()) {
+                    URL endpoint = null;
+                    try {
+                        endpoint = new URL("https://api.gios.gov.pl/pjp-api/rest/station/sensors/"+stations.get(i).getId());
+                        HttpURLConnection connection = (HttpURLConnection) endpoint.openConnection();
+                        if (connection.getResponseCode() == 200) {
+                            InputStreamReader reader = new InputStreamReader(connection.getInputStream());
+                            JsonParser parser = new JsonParser();
+                            JsonArray jsonArray = (JsonArray)parser.parse(reader);
+
+                            endpoint = new URL("https://api.gios.gov.pl/pjp-api/rest/aqindex/getIndex/"+stations.get(i).getId());
+                            connection = (HttpURLConnection) endpoint.openConnection();
+
+                            if (connection.getResponseCode() == 200)
+                            {
+                                InputStreamReader paramReader = new InputStreamReader(connection.getInputStream());
+                                parser = new JsonParser();
+                                JsonObject index = (JsonObject) parser.parse(paramReader);
+
+                                for(int j=0;j<jsonArray.size();j++)
+                                {
+                                    JsonObject jsonObject = jsonArray.get(j).getAsJsonObject();
+                                    JsonObject param= jsonObject.get("param").getAsJsonObject();
+                                    String code= (param.get("paramCode").getAsString()).toLowerCase();
+                                    code=code.replace(".","");
+                                    String key = code+"IndexLevel";
+                                    if(!airInfos.containsKey(key)) {
+                                        JsonObject indexName= index.getAsJsonObject(key);
+                                        if(indexName!=null) {
+                                            AirInfo value = new AirInfo(param.get("paramFormula").getAsString(), param.get("paramName").getAsString(), indexName.get("id").getAsInt(), stations.get(i).getHowFar());
+                                            airInfos.put(key, value);
+                                        }
+                                    }
+                                }
+                            }
+                            else {
+                            }
+                        } else {
+                        }
+                    } catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    i++;
+                }
+                MainActivity.this.runOnUiThread(new Runnable(){
+                    public void run() {
+                        List<AirInfo> list = new ArrayList<>();
+                        for(AirInfo ai : airInfos.values())
+                        {
+                            list.add(ai);
+                        }
+                        AirInfoAdapter AirInfoAdapterViewAdapter = new AirInfoAdapter(list,MainActivity.this);
+                        recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
+                        recyclerView.setAdapter(AirInfoAdapterViewAdapter);
+                    }
+                });
+            }
+        });
+
     }
 }
