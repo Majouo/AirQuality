@@ -78,20 +78,7 @@ public class MainActivity extends AppCompatActivity {
         locationRequest.setInterval(5000);
         locationRequest.setFastestInterval(2000);
         fetchUserLocation();
-
         recyclerView = findViewById(R.id.recyclerView);
-
-        if(fetchUserLocation()==true)
-        {
-            try {
-                System.out.println(stations.get(0).toString()+" "+stations.get(0).howFar+" Km");
-            }
-            catch (IndexOutOfBoundsException e)
-            {
-            }
-            System.out.println(userLocation);
-            fetchStations();
-        }
 
 
     }
@@ -151,6 +138,7 @@ public class MainActivity extends AppCompatActivity {
                             {
                                 int index= locationResult.getLocations().size()-1;
                                 userLocation= new Location(locationResult.getLocations().get(index).getLongitude(),locationResult.getLocations().get(index).getLatitude());
+                                fetchStations();
                             }
                         }
                     }, Looper.getMainLooper());
@@ -164,6 +152,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }else
             {
+                turnOnGPS();
                 requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             }
         }
@@ -292,16 +281,6 @@ public class MainActivity extends AppCompatActivity {
                             InputStreamReader reader = new InputStreamReader(connection.getInputStream());
                             JsonParser parser = new JsonParser();
                             JsonArray jsonArray = (JsonArray)parser.parse(reader);
-
-                            endpoint = new URL("https://api.gios.gov.pl/pjp-api/rest/aqindex/getIndex/"+stations.get(i).getId());
-                            connection = (HttpURLConnection) endpoint.openConnection();
-
-                            if (connection.getResponseCode() == 200)
-                            {
-                                InputStreamReader paramReader = new InputStreamReader(connection.getInputStream());
-                                parser = new JsonParser();
-                                JsonObject index = (JsonObject) parser.parse(paramReader);
-
                                 for(int j=0;j<jsonArray.size();j++)
                                 {
                                     JsonObject jsonObject = jsonArray.get(j).getAsJsonObject();
@@ -310,16 +289,20 @@ public class MainActivity extends AppCompatActivity {
                                     code=code.replace(".","");
                                     String key = code+"IndexLevel";
                                     if(!airInfos.containsKey(key)) {
-                                        JsonObject indexName= index.getAsJsonObject(key);
-                                        if(indexName!=null) {
-                                            AirInfo value = new AirInfo(param.get("paramFormula").getAsString(), param.get("paramName").getAsString(), indexName.get("id").getAsInt(), stations.get(i).getHowFar());
-                                            airInfos.put(key, value);
+                                        endpoint = new URL("https://api.gios.gov.pl/pjp-api/rest/aqindex/getIndex/"+stations.get(i).getId());
+                                        connection = (HttpURLConnection) endpoint.openConnection();
+                                        if (connection.getResponseCode() == 200) {
+                                            InputStreamReader paramReader = new InputStreamReader(connection.getInputStream());
+                                            parser = new JsonParser();
+                                            JsonObject index = (JsonObject) parser.parse(paramReader);
+                                            JsonObject indexName = index.getAsJsonObject(key);
+                                            if (indexName != null) {
+                                                AirInfo value = new AirInfo(param.get("paramFormula").getAsString(), param.get("paramName").getAsString(), indexName.get("id").getAsInt(), stations.get(i).getHowFar());
+                                                airInfos.put(key, value);
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            else {
-                            }
                         } else {
                         }
                     } catch (MalformedURLException e) {

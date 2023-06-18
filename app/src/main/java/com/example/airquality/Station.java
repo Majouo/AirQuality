@@ -26,17 +26,11 @@ public class Station implements Serializable {
 
     double howFar;//Km
 
-    JsonObject data;
-
     public Station(int id, Location location, String stationName) {
         this.id = id;
         this.location = location;
         this.stationName = stationName;
         howFar =Double.MAX_VALUE;
-    }
-
-    public void setData(JsonObject data) {
-        this.data = data;
     }
 
     public double getHowFar() {
@@ -68,32 +62,6 @@ public class Station implements Serializable {
 
     public void setStationName(String stationName) {
         this.stationName = stationName;
-    }
-
-    public JsonObject getStationData()
-    {
-        AsyncTask.execute(new Runnable() {
-            @Override
-            public void run() {
-                URL endpoint = null;
-                try {
-                    endpoint = new URL("https://api.gios.gov.pl/pjp-api/rest/aqindex/getIndex/"+id);
-                    HttpURLConnection connection = (HttpURLConnection)endpoint.openConnection();
-                    if(connection.getResponseCode() == 200){
-                        InputStreamReader reader = new InputStreamReader(connection.getInputStream());
-                        JsonParser parser = new JsonParser();
-                        JsonObject jsonObject = (JsonObject) parser.parse(reader);
-                        data=jsonObject;
-                    }else{
-                    }
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException(e);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-        return data;
     }
 
     @Override
